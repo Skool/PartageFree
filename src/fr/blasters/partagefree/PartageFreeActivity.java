@@ -1,6 +1,7 @@
 package fr.blasters.partagefree;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -11,11 +12,11 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.commons.net.ftp.*;
@@ -43,6 +44,7 @@ public class PartageFreeActivity extends Activity {
         
         up.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
+        		savePreferences();
         		uploadFile();
         	}
         });
@@ -53,8 +55,20 @@ public class PartageFreeActivity extends Activity {
         	}
         });
         
+       // Après le load, on regarde si on a lancé l'appli via le menu share
         
-        
+      Intent intent = getIntent();
+      Bundle extras = intent.getExtras();
+      String action = intent.getAction();
+
+      // if this is from the share menu
+      if (Intent.ACTION_SEND.equals(action)) {   
+    	  if (extras.containsKey(Intent.EXTRA_STREAM)) {
+    		  // Get resource path
+		      Uri uri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
+		      fichier.setText(uri.getPath());
+    	  }
+      }
         
     }
     
@@ -91,7 +105,7 @@ public class PartageFreeActivity extends Activity {
     	
     	loadPreferences();
     	
-    	String destination = "/"+ new java.io.File(fichier.getText().toString()).getName();
+    	String destination = "/"+ PartageFreeActivity.sanitizeFilename(new java.io.File(fichier.getText().toString()).getName());
     	
     	printNotif("Upload...", "PartageFree", "Début de l'upload");
     	
@@ -153,7 +167,7 @@ public class PartageFreeActivity extends Activity {
             printNotif("Envoi","PartageFree","Envoi du fichier");
             // Upload
             InputStream input = new FileInputStream(fichier.getText().toString());
-            
+                        
             if (ftp.storeFile(destination, input))
             	printNotif("Done","PartageFree","Envoi terminé");
             else
@@ -164,6 +178,11 @@ public class PartageFreeActivity extends Activity {
             ftp.noop(); // check that control connection is working OK
 
             ftp.logout();
+        }
+        catch (FileNotFoundException e)
+        {
+        	printNotif("Erreur !","PartageFree","Fichier non trouvé");
+            e.printStackTrace();
         }
         catch (FTPConnectionClosedException e)
         {
@@ -180,6 +199,7 @@ public class PartageFreeActivity extends Activity {
         }
         finally
         {
+        	// si on a eu une Exception, on ferme na connexion
             if (ftp.isConnected())
             {
                 try
@@ -212,4 +232,17 @@ public class PartageFreeActivity extends Activity {
         //Enfin on ajoute notre notification et son ID à notre gestionnaire de notification
         notificationManager.notify(5487354, notification);
     }
+    
+	/**
+	 * Retourne un objet String qui contient une version compatible avec dl.free.fr du nom de fichier entré
+	 * @param name Le mom de fichier à rendre compatible
+	 * @return Le nom de fichier rendu compatible
+	 * @author Gilles Maurer
+	 * Fonction récupérée dans le programme DLUploadClient de Gilles Maurer
+	 */
+	public static String sanitizeFilename(String name)
+	{
+		return name.replaceAll("[^a-zA-Z0-9\\.\\(\\)\\-\\_\\[\\]]", "_");
+	}
+    
 }
