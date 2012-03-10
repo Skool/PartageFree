@@ -91,6 +91,8 @@ public class PartageFreeActivity extends Activity {
     	
     	loadPreferences();
     	
+    	String destination = "/"+ new java.io.File(fichier.getText().toString()).getName();
+    	
     	printNotif("Upload...", "PartageFree", "Début de l'upload");
     	
     	FTPClient ftp = new FTPClient();
@@ -152,7 +154,7 @@ public class PartageFreeActivity extends Activity {
             // Upload
             InputStream input = new FileInputStream(fichier.getText().toString());
             
-            if (ftp.storeFile("/test.zip", input))
+            if (ftp.storeFile(destination, input))
             	printNotif("Done","PartageFree","Envoi terminé");
             else
             	printNotif("Erreur !","PartageFree","Envoi échoué");
