@@ -10,13 +10,24 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import org.apache.commons.net.ftp.*;
 
 public class PartageFreeActivity extends Activity {
+	
+	
+	EditText email;
+	EditText password;
+	EditText fichier;
+	public static final String PREFS_NAME = "PartageFreePrefs";
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -25,26 +36,64 @@ public class PartageFreeActivity extends Activity {
         setContentView(R.layout.main);
         
         //TextView tv = (TextView) findViewById(R.id.textView1);
-        Button bt = (Button) findViewById(R.id.button1);
-        //tv.setText("Hello World");
-        //bt.setText("Upload");
+        Button up = (Button) findViewById(R.id.button1);
+        Button save = (Button) findViewById(R.id.button2);
         
-        bt.setOnClickListener(new View.OnClickListener() {
+        loadPreferences();
+        
+        up.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
         		uploadFile();
         	}
         });
         
+        save.setOnClickListener(new View.OnClickListener() {
+        	public void onClick(View v) {
+        		savePreferences();
+        	}
+        });
+        
+        
+        
+        
     }
     
-    public void uploadFile() {
+    
+    private void loadPreferences() {
+    	
+    	email = (EditText) findViewById(R.id.editText1);
+        password = (EditText) findViewById(R.id.editText2);
+        fichier = (EditText) findViewById(R.id.editText3);
+    	
+    	SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+    	email.setText(settings.getString("email", ""));
+		password.setText(settings.getString("password", ""));
+		fichier.setText(settings.getString("fichier", "/sdcard"));
+		
+	}
+
+
+	private void savePreferences() {
+    	
+		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+	    SharedPreferences.Editor editor = settings.edit();
+	    editor.putString("email", email.getText().toString());
+	    editor.putString("password", password.getText().toString());
+	    editor.putString("fichier", fichier.getText().toString());
+
+	    // Commit the edits!
+	    editor.commit();
+		
+    	Toast.makeText(this, "Modifications enregistrées", Toast.LENGTH_SHORT).show();
+    }
+    
+    private void uploadFile() {
+    	
+    	loadPreferences();
     	
     	printNotif("Upload...", "PartageFree", "Début de l'upload");
     	
     	FTPClient ftp = new FTPClient();
-    	String email = "xxxxx";
-    	String password = "abc123";
-    	String fichier = "/sdcard/test.zip";
     	
         try
         {
@@ -88,7 +137,7 @@ public class PartageFreeActivity extends Activity {
         
         try
         {
-            if (!ftp.login(email, password))
+            if (!ftp.login(email.getText().toString(), password.getText().toString()))
             {
                 ftp.logout();
                 printNotif("Erreur !","PartageFree","Erreur de login");
@@ -101,8 +150,13 @@ public class PartageFreeActivity extends Activity {
 
             printNotif("Envoi","PartageFree","Envoi du fichier");
             // Upload
-            InputStream input = new FileInputStream(fichier);
-            ftp.storeFile("/", input);
+            InputStream input = new FileInputStream(fichier.getText().toString());
+            
+            if (ftp.storeFile("/test.zip", input))
+            	printNotif("Done","PartageFree","Envoi terminé");
+            else
+            	printNotif("Erreur !","PartageFree","Envoi échoué");
+            
             input.close();
           
             ftp.noop(); // check that control connection is working OK
