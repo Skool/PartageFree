@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -72,7 +74,7 @@ public class PartageFreeActivity extends Activity {
     		  // Get resource path
     		  fichierUri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
 		      fichierTxt.setText(fichierUri.toString());
-		      destination = "/"+ PartageFreeActivity.sanitizeFilename((new File(fichierUri.getPath())).getName());
+		      destination = "/"+ PartageFreeActivity.sanitizeFilename(fichierUri.getLastPathSegment());
 		      destTxt.setText(destination);
     	  }
       }
