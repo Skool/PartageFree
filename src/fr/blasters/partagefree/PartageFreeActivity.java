@@ -1,10 +1,11 @@
 package fr.blasters.partagefree;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.net.URI;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -17,6 +18,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.commons.net.ftp.*;
@@ -26,7 +28,9 @@ public class PartageFreeActivity extends Activity {
 	
 	EditText email;
 	EditText password;
-	EditText fichier;
+	TextView fichierTxt;
+	Uri fichierUri;
+	String destination;
 	public static final String PREFS_NAME = "PartageFreePrefs";
 	
     /** Called when the activity is first created. */
@@ -36,9 +40,10 @@ public class PartageFreeActivity extends Activity {
         // apparament ça se met au début
         setContentView(R.layout.main);
         
-        //TextView tv = (TextView) findViewById(R.id.textView1);
-        Button up = (Button) findViewById(R.id.button1);
-        Button save = (Button) findViewById(R.id.button2);
+        fichierTxt = (TextView) findViewById(R.id.textSrcUri);
+        TextView destTxt = (TextView) findViewById(R.id.textDestPath);
+        Button up = (Button) findViewById(R.id.buttonUp);
+        Button save = (Button) findViewById(R.id.buttonSave);
         
         loadPreferences();
         
@@ -65,8 +70,10 @@ public class PartageFreeActivity extends Activity {
       if (Intent.ACTION_SEND.equals(action)) {   
     	  if (extras.containsKey(Intent.EXTRA_STREAM)) {
     		  // Get resource path
-		      Uri uri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
-		      fichier.setText(uri.getPath());
+    		  fichierUri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
+		      fichierTxt.setText(fichierUri.toString());
+		      destination = "/"+ PartageFreeActivity.sanitizeFilename((new File(fichierUri.getPath())).getName());
+		      destTxt.setText(destination);
     	  }
       }
         
@@ -75,14 +82,12 @@ public class PartageFreeActivity extends Activity {
     
     private void loadPreferences() {
     	
-    	email = (EditText) findViewById(R.id.editText1);
-        password = (EditText) findViewById(R.id.editText2);
-        fichier = (EditText) findViewById(R.id.editText3);
+    	email = (EditText) findViewById(R.id.editMail);
+        password = (EditText) findViewById(R.id.editPwd);
     	
     	SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
     	email.setText(settings.getString("email", ""));
 		password.setText(settings.getString("password", ""));
-		fichier.setText(settings.getString("fichier", "/sdcard"));
 		
 	}
 
@@ -93,7 +98,6 @@ public class PartageFreeActivity extends Activity {
 	    SharedPreferences.Editor editor = settings.edit();
 	    editor.putString("email", email.getText().toString());
 	    editor.putString("password", password.getText().toString());
-	    editor.putString("fichier", fichier.getText().toString());
 
 	    // Commit the edits!
 	    editor.commit();
@@ -104,8 +108,6 @@ public class PartageFreeActivity extends Activity {
     private void uploadFile() {
     	
     	loadPreferences();
-    	
-    	String destination = "/"+ PartageFreeActivity.sanitizeFilename(new java.io.File(fichier.getText().toString()).getName());
     	
     	printNotif("Upload...", "PartageFree", "Début de l'upload");
     	
@@ -166,7 +168,7 @@ public class PartageFreeActivity extends Activity {
 
             printNotif("Envoi","PartageFree","Envoi du fichier");
             // Upload
-            InputStream input = new FileInputStream(fichier.getText().toString());
+            InputStream input = this.getContentResolver().openInputStream(fichierUri);;
                         
             if (ftp.storeFile(destination, input))
             	printNotif("Done","PartageFree","Envoi terminé");
