@@ -8,7 +8,7 @@
         android:id="@+id/textMail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Email"
+        android:text="@string/email"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
     <EditText
@@ -23,7 +23,7 @@
         android:id="@+id/textPwd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Password"
+        android:text="@string/pwd"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
     <EditText
@@ -41,14 +41,14 @@
             android:id="@+id/textSrc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Src : "
+            android:text="@string/src"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <TextView
             android:id="@+id/textSrcUri"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="file://" />
+            android:text="@string/defSrc" />
 
     </LinearLayout>
 
@@ -61,33 +61,28 @@
             android:id="@+id/textDest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Dest : "
+            android:text="@string/dst"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
 		<TextView
             android:id="@+id/textDestPath"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="/" />
+            android:text="@string/defDst" />
 
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:gravity="center" >
 
         <Button
             android:id="@+id/buttonSave"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enregistrer" />
-
-        <Button
-            android:id="@+id/buttonUp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Upload" />
+            android:text="@string/save" />
     </LinearLayout>
 
 </LinearLayout>

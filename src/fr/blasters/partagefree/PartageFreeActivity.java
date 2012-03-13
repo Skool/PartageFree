@@ -43,32 +43,18 @@ public class PartageFreeActivity extends Activity {
         
         fichierTxt = (TextView) findViewById(R.id.textSrcUri);
         TextView destTxt = (TextView) findViewById(R.id.textDestPath);
-        Button up = (Button) findViewById(R.id.buttonUp);
         Button save = (Button) findViewById(R.id.buttonSave);
         
         loadPreferences();
         
-        up.setOnClickListener(new View.OnClickListener() {
-        	public void onClick(View v) {
-        		savePreferences();
-        		uploadFile();
-        	}
-        });
-        
-        save.setOnClickListener(new View.OnClickListener() {
-        	public void onClick(View v) {
-        		savePreferences();
-        	}
-        });
-        
        // Après le load, on regarde si on a lancé l'appli via le menu share
         
-      Intent intent = getIntent();
-      Bundle extras = intent.getExtras();
-      String action = intent.getAction();
+       Intent intent = getIntent();
+       Bundle extras = intent.getExtras();
+       String action = intent.getAction();
 
-      // if this is from the share menu
-      if (Intent.ACTION_SEND.equals(action)) {   
+       // if this is from the share menu
+       if (Intent.ACTION_SEND.equals(action)) {   
     	  if (extras.containsKey(Intent.EXTRA_STREAM)) {
     		  // Get resource path
     		  fichierUri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
@@ -93,8 +79,23 @@ public class PartageFreeActivity extends Activity {
 		      
 		      destination = "/"+ PartageFreeActivity.sanitizeFilename(name);
 		      destTxt.setText(destination);
+		      
+		      save.setText(R.string.upload);
+		      save.setOnClickListener(new View.OnClickListener() {
+		        	public void onClick(View v) {
+		        		savePreferences();
+		        		uploadFile();
+		        	}
+		        });
     	  }
-      }
+       } else {
+    	  save.setText(R.string.save);
+    	  save.setOnClickListener(new View.OnClickListener() {
+          	public void onClick(View v) {
+          		savePreferences();
+          	}
+          });
+       }
         
     }
     
