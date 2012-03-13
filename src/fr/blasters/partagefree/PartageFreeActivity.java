@@ -1,12 +1,8 @@
 package fr.blasters.partagefree;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -17,11 +13,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.database.Cursor;
+import android.content.ContentResolver;
 
 import org.apache.commons.net.ftp.*;
 
@@ -74,7 +73,25 @@ public class PartageFreeActivity extends Activity {
     		  // Get resource path
     		  fichierUri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
 		      fichierTxt.setText(fichierUri.toString());
-		      destination = "/"+ PartageFreeActivity.sanitizeFilename(fichierUri.getLastPathSegment());
+		      
+		      // pompé chez K9
+		      String name = null;
+		      ContentResolver contentResolver = getContentResolver();
+		      Cursor metadataCursor = contentResolver.query(fichierUri, new String[] { OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE }, null, null, null);
+		      if (metadataCursor != null) {
+			      try {
+			         if (metadataCursor.moveToFirst()) {
+			            name = metadataCursor.getString(0);
+			         }
+			      } finally {
+			         metadataCursor.close();
+			      }
+			  }
+		      if (name == null) {
+		            name = fichierUri.getLastPathSegment();
+		      }
+		      
+		      destination = "/"+ PartageFreeActivity.sanitizeFilename(name);
 		      destTxt.setText(destination);
     	  }
       }
@@ -170,7 +187,7 @@ public class PartageFreeActivity extends Activity {
 
             printNotif("Envoi","PartageFree","Envoi du fichier");
             // Upload
-            InputStream input = this.getContentResolver().openInputStream(fichierUri);;
+            InputStream input = this.getContentResolver().openInputStream(fichierUri);
                         
             if (ftp.storeFile(destination, input))
             	printNotif("Done","PartageFree","Envoi terminé");
