@@ -3,14 +3,17 @@ package fr.blasters.partagefree;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
@@ -19,10 +22,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.database.Cursor;
-import android.content.ContentResolver;
 
-import org.apache.commons.net.ftp.*;
+import com.enterprisedt.net.ftp.*;
 
 public class PartageFreeActivity extends Activity {
 	
@@ -125,24 +126,48 @@ public class PartageFreeActivity extends Activity {
     	Toast.makeText(this, "Modifications enregistrées", Toast.LENGTH_SHORT).show();
     }
     
+	/**
+	 * Fonction qui copie un InputStream dans un OutputStream
+	 * Piqué là :
+	 * http://www.java2s.com/Code/Android/File/CopyStream.htm
+	 */
+	private void copyStream(InputStream is, OutputStream os) {
+		final int buffer_size = 1024;
+		try {
+			byte[] bytes = new byte[buffer_size];
+		    for (;;) {
+		    	int count = is.read(bytes, 0, buffer_size);
+		    	if (count == -1)
+		    		break;
+		    	os.write(bytes, 0, count);
+		    }
+		} catch (Exception ex) {
+			printNotif("Erreur","PartageFree","Exception durant la copie");
+		}
+	}
+	
+	/**
+	 * Fonction principale qui gère l'upload du fichier
+	 * On utilise cette lib : http://www.enterprisedt.com/products/edtftpj/doc/manual/index.html
+	 */
     private void uploadFile() {
     	
     	loadPreferences();
     	
     	printNotif("Upload...", "PartageFree", "Début de l'upload");
     	
-    	FTPClient ftp = new FTPClient();
+    	FileTransferClient ftp = new FileTransferClient();
     	
         try
         {
-            int reply;
-            ftp.connect("dl.free.fr");
+            ftp.setRemoteHost("dl.free.fr");
+            ftp.setUserName(email.getText().toString());
+            ftp.setPassword(password.getText().toString());
+            ftp.connect();
 
             // After connection attempt, you should check the reply code to verify
             // success.
-            reply = ftp.getReplyCode();
-
-            if (!FTPReply.isPositiveCompletion(reply))
+            if (!ftp.isConnected())
             {
                 ftp.disconnect();
                 printNotif("Erreur !","PartageFree","Erreur au connect()");
@@ -150,7 +175,7 @@ public class PartageFreeActivity extends Activity {
                 
             }
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             if (ftp.isConnected())
             {
@@ -158,7 +183,7 @@ public class PartageFreeActivity extends Activity {
                 {
                     ftp.disconnect();
                 }
-                catch (IOException f)
+                catch (Exception f)
                 {
                     // do nothing
                 }
@@ -175,63 +200,56 @@ public class PartageFreeActivity extends Activity {
         
         try
         {
-            if (!ftp.login(email.getText().toString(), password.getText().toString()))
-            {
-                ftp.logout();
-                printNotif("Erreur !","PartageFree","Erreur de login");
-                return;
-            }
-
-            ftp.setFileType(FTP.BINARY_FILE_TYPE);
-            
-            ftp.enterLocalPassiveMode();
+        	// Binary Mode
+            ftp.setContentType(FTPTransferType.BINARY);
+            // Passive Mode
+            ftp.getAdvancedFTPSettings().setConnectMode(FTPConnectMode.PASV);
 
             printNotif("Envoi","PartageFree","Envoi du fichier");
             // Upload
-            InputStream input = this.getContentResolver().openInputStream(fichierUri);
-                        
-            if (ftp.storeFile(destination, input))
-            	printNotif("Done","PartageFree","Envoi terminé");
-            else
-            	printNotif("Erreur !","PartageFree","Envoi échoué");
+            //InputStream input = this.getContentResolver().openInputStream(fichierUri);
             
-            input.close();
+            // creation de l'objet stream envoi
+            FileTransferOutputStream ftpOut = ftp.uploadStream(destination);
+            // création de l'objet stream de lecture du fichier à envoyer
+            InputStream fileIn = this.getContentResolver().openInputStream(fichierUri);
+            
+            // envoi
+            copyStream(fileIn, ftpOut);
+            
+            printNotif("Done","PartageFree","Envoi terminé");
           
-            ftp.noop(); // check that control connection is working OK
-
-            ftp.logout();
+    		// on ferme tout
+            fileIn.close();
+            ftpOut.close();
         }
         catch (FileNotFoundException e)
         {
         	printNotif("Erreur !","PartageFree","Fichier non trouvé");
             e.printStackTrace();
         }
-        catch (FTPConnectionClosedException e)
+        catch (FTPException e)
         {
             // error = true;
             //System.err.println("Server closed connection.");
-        	printNotif("Erreur !","PartageFree","Server closed connection");
+        	printNotif("Erreur !","PartageFree","FTP Exception");
             e.printStackTrace();
         }
         catch (IOException e)
         {
             // error = true;
-        	printNotif("Erreur !","PartageFree","Exception à l'upload");
+        	printNotif("Erreur !","PartageFree","IOException à l'upload");
             e.printStackTrace();
         }
         finally
         {
-        	// si on a eu une Exception, on ferme na connexion
-            if (ftp.isConnected())
+        	try
             {
-                try
-                {
-                    ftp.disconnect();
-                }
-                catch (IOException f)
-                {
-                    // do nothing
-                }
+                ftp.disconnect();
+            }
+            catch (Exception f)
+            {
+                // do nothing
             }
         }
 
