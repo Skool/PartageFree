@@ -1,9 +1,4 @@
-package fr.blasters.partagefree;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+package fr.blasters.partageFree;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -23,8 +18,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.enterprisedt.net.ftp.*;
-
 public class PartageFreeActivity extends Activity {
 	
 	
@@ -40,7 +33,7 @@ public class PartageFreeActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // apparament ça se met au début
-        setContentView(R.layout.main);
+        setContentView(R.layout.activity_main);
         
         fichierTxt = (TextView) findViewById(R.id.textSrcUri);
         TextView destTxt = (TextView) findViewById(R.id.textDestPath);
@@ -107,8 +100,8 @@ public class PartageFreeActivity extends Activity {
         password = (EditText) findViewById(R.id.editPwd);
     	
     	SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-    	email.setText(settings.getString("email", ""));
-		password.setText(settings.getString("password", ""));
+    	email.setText(settings.getString("email", "mail@example.com"));
+		password.setText(settings.getString("password", "12345"));
 		
 	}
 
@@ -130,7 +123,7 @@ public class PartageFreeActivity extends Activity {
 	 * Fonction qui copie un InputStream dans un OutputStream
 	 * Piqué là :
 	 * http://www.java2s.com/Code/Android/File/CopyStream.htm
-	 */
+	 * disabled
 	private void copyStream(InputStream is, OutputStream os) {
 		final int buffer_size = 1024;
 		try {
@@ -145,117 +138,21 @@ public class PartageFreeActivity extends Activity {
 			printNotif("Erreur","PartageFree","Exception durant la copie");
 		}
 	}
+	 */
 	
 	/**
 	 * Fonction principale qui gère l'upload du fichier
-	 * On utilise cette lib : http://www.enterprisedt.com/products/edtftpj/doc/manual/index.html
 	 */
     private void uploadFile() {
-    	
+
     	loadPreferences();
     	
-    	printNotif("Upload...", "PartageFree", "Début de l'upload");
+    	new UploadToFree().execute(this);
     	
-    	FileTransferClient ftp = new FileTransferClient();
-    	
-        try
-        {
-            ftp.setRemoteHost("dl.free.fr");
-            ftp.setUserName(email.getText().toString());
-            ftp.setPassword(password.getText().toString());
-            ftp.connect();
-
-            // After connection attempt, you should check the reply code to verify
-            // success.
-            if (!ftp.isConnected())
-            {
-                ftp.disconnect();
-                printNotif("Erreur !","PartageFree","Erreur au connect()");
-                //TODO: Afficher un message d'erreur
-                
-            }
-        }
-        catch (Exception e)
-        {
-            if (ftp.isConnected())
-            {
-                try
-                {
-                    ftp.disconnect();
-                }
-                catch (Exception f)
-                {
-                    // do nothing
-                }
-            }
-            printNotif("Erreur !","PartageFree","Exception au connect()");
-            e.printStackTrace();
-            // System.exit(1);
-            //TODO: Afficher un message d'erreur
-        }
-
-    	// La, on est connecté
-        printNotif("Connecté","PartageFree","Là, on est connecté");
-    	
-        
-        try
-        {
-        	// Binary Mode
-            ftp.setContentType(FTPTransferType.BINARY);
-            // Passive Mode
-            ftp.getAdvancedFTPSettings().setConnectMode(FTPConnectMode.PASV);
-
-            printNotif("Envoi","PartageFree","Envoi du fichier");
-            // Upload
-            //InputStream input = this.getContentResolver().openInputStream(fichierUri);
-            
-            // creation de l'objet stream envoi
-            FileTransferOutputStream ftpOut = ftp.uploadStream(destination);
-            // création de l'objet stream de lecture du fichier à envoyer
-            InputStream fileIn = this.getContentResolver().openInputStream(fichierUri);
-            
-            // envoi
-            copyStream(fileIn, ftpOut);
-            
-            printNotif("Done","PartageFree","Envoi terminé");
-          
-    		// on ferme tout
-            fileIn.close();
-            ftpOut.close();
-        }
-        catch (FileNotFoundException e)
-        {
-        	printNotif("Erreur !","PartageFree","Fichier non trouvé");
-            e.printStackTrace();
-        }
-        catch (FTPException e)
-        {
-            // error = true;
-            //System.err.println("Server closed connection.");
-        	printNotif("Erreur !","PartageFree","FTP Exception");
-            e.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            // error = true;
-        	printNotif("Erreur !","PartageFree","IOException à l'upload");
-            e.printStackTrace();
-        }
-        finally
-        {
-        	try
-            {
-                ftp.disconnect();
-            }
-            catch (Exception f)
-            {
-                // do nothing
-            }
-        }
-
     }
     
-    private void printNotif(String entete, String titre, String message) {
+    @SuppressWarnings("deprecation")
+	protected void printNotif(String entete, String titre, String message) {
     	//On crée un "gestionnaire de notification"
     	NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);        
  
@@ -264,13 +161,15 @@ public class PartageFreeActivity extends Activity {
     	Notification notification = new Notification(R.drawable.ic_launcher, entete, System.currentTimeMillis());  
  
     	//Intent intent = new Intent(this, NotificationViewer.class);
-    	PendingIntent contentIntent = PendingIntent.getActivity(this, 0, null, 0);
+    	//Intent intent = new Intent(this.getApplicationContext(), null);
+    	//PendingIntent contentIntent = PendingIntent.getActivity(this.getApplicationContext(), 0, null, 0);
+    	PendingIntent contentIntent = null;
     	
         //On configure notre notification avec tous les paramètres que l'on vient de créer
         notification.setLatestEventInfo(this, titre, message, contentIntent);
         
         //Enfin on ajoute notre notification et son ID à notre gestionnaire de notification
-        notificationManager.notify(5487354, notification);
+        notificationManager.notify(5487364, notification);
     }
     
 	/**
@@ -285,4 +184,20 @@ public class PartageFreeActivity extends Activity {
 		return name.replaceAll("[^a-zA-Z0-9\\.\\(\\)\\-\\_\\[\\]]", "_");
 	}
     
+	protected String getEmail()
+	{
+		return email.getText().toString();
+	}
+	protected String getPassword()
+	{
+		return password.getText().toString();
+	}
+	protected Uri getFchierUri()
+	{
+		return fichierUri;
+	}
+	protected String getDestination()
+	{
+		return destination;
+	}
 }

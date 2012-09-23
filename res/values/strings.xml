@@ -1,5 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PartageFree</string>
 
+    <string name="app_name">PartageFree</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">PartageFree</string>
+    <string name="email">Email</string>
+    <string name="pwd">Password de session FTP</string>
+    <string name="src">Src : </string>
+    <string name="dst">Dst : </string>
+    <string name="save">Enregistrer</string>
+    <string name="upload">Upload</string>
+    <string name="defDst">/</string>
+    <string name="defSrc">file://</string>
 </resources>
