@@ -14,6 +14,10 @@ import android.os.AsyncTask;
 
 public class UploadToFree extends AsyncTask<PartageFreeActivity, Integer, String> {
 
+	/**
+	 * Fonction qui gère l'upload
+	 * http://developer.android.com/reference/android/os/AsyncTask.html
+	 */
 	protected String doInBackground(PartageFreeActivity... tabThreads) {
 		
 		PartageFreeActivity mainThread = tabThreads[0];

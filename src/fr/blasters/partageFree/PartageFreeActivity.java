@@ -87,6 +87,9 @@ public class PartageFreeActivity extends Activity {
     	  save.setOnClickListener(new View.OnClickListener() {
           	public void onClick(View v) {
           		savePreferences();
+          		// quand on n'a pas un upload a faire, on quitte apres la sauvegarde
+          		finish();
+          		//System.exit(0);
           	}
           });
        }
