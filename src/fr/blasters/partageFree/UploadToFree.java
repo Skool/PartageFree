@@ -1,8 +1,13 @@
 package fr.blasters.partageFree;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -12,15 +17,18 @@ import org.apache.commons.net.ftp.FTPReply;
 import android.net.Uri;
 import android.os.AsyncTask;
 
-public class UploadToFree extends AsyncTask<PartageFreeActivity, Integer, String> {
+public class UploadToFree extends AsyncTask<PartageFreeActivity, Long, String> {
 
 	/**
 	 * Fonction qui gère l'upload
 	 * http://developer.android.com/reference/android/os/AsyncTask.html
 	 */
+	long size;
+	PartageFreeActivity mainThread;
+	
 	protected String doInBackground(PartageFreeActivity... tabThreads) {
 		
-		PartageFreeActivity mainThread = tabThreads[0];
+		mainThread = tabThreads[0];
 		mainThread.printNotif("Upload...", "PartageFree", "Début de l'upload");
     	
 		String email = mainThread.getEmail();
@@ -83,17 +91,30 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Integer, String
             
             ftp.enterLocalPassiveMode();
 
-            mainThread.printNotif("Envoi","PartageFree","Envoi du fichier");
             // Upload
-            InputStream input = mainThread.getContentResolver().openInputStream(fichierUri);
-                        
-            if (ftp.storeFile(destination, input))
-            	mainThread.printNotif("Done","PartageFree","Envoi terminé");
-            else
-            	mainThread.printNotif("Erreur !","PartageFree","Envoi échoué");
+            InputStream streamIn = mainThread.getContentResolver().openInputStream(fichierUri);
+            OutputStream streamOut = new BufferedOutputStream(ftp.storeFileStream(destination), ftp.getBufferSize());
             
-            input.close();
-          
+            // pour le pourcentage
+            File fichier = new File(new URI(fichierUri.toString()));
+            size = fichier.length();
+            mainThread.printNotif("Envoi","PartageFree","Envoi du fichier ");
+            
+            int numRead;
+            long totalSize=0;
+            byte[] buf = new byte[100000];
+            while ( (numRead = streamIn.read(buf) ) >= 0) {
+            	streamOut.write(buf, 0, numRead);
+            	totalSize += numRead;
+            	// mise à jour de la barre de progression
+            	publishProgress(totalSize);
+            }
+
+            streamIn.close();
+            streamOut.close();
+            
+            mainThread.printNotif("Envoi","PartageFree","Envoi terminé");
+            
             ftp.noop(); // check that control connection is working OK
 
             ftp.logout();
@@ -116,9 +137,13 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Integer, String
         	mainThread.printNotif("Erreur !","PartageFree","Exception à l'upload");
             e.printStackTrace();
         }
+        catch (URISyntaxException e) {
+        	mainThread.printNotif("Erreur !","PartageFree","Exception URI");
+			e.printStackTrace();
+		}
         finally
         {
-        	// si on a eu une Exception, on ferme na connexion
+        	// si on a eu une Exception, on ferme la connexion
             if (ftp.isConnected())
             {
                 try
@@ -135,5 +160,13 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Integer, String
 		return null;
 	}
 	
+	/**
+	 * Fonction qui est appelée par le publishProgress pour la progressBar
+	 * @param result
+	 */
+    protected void onPostExecute(long currentSize) {
+    	long pourcentage = (size - currentSize)*100 / size;
+        mainThread.printNotif(pourcentage+"%", "PartageFree", "Avancement : "+pourcentage+"%");
+    }
 
 }
