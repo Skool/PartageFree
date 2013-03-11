@@ -23,7 +23,6 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Long, String> {
 	 * Fonction qui gère l'upload
 	 * http://developer.android.com/reference/android/os/AsyncTask.html
 	 */
-	long size;
 	PartageFreeActivity mainThread;
 	
 	protected String doInBackground(PartageFreeActivity... tabThreads) {
@@ -96,9 +95,13 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Long, String> {
             OutputStream streamOut = new BufferedOutputStream(ftp.storeFileStream(destination), ftp.getBufferSize());
             
             // pour le pourcentage
+            // genere des force close sur les liens content://
+            /*
             File fichier = new File(new URI(fichierUri.toString()));
             size = fichier.length();
+            */
             mainThread.printNotif("Envoi","PartageFree","Envoi du fichier ");
+            
             
             int numRead;
             long totalSize=0;
@@ -107,7 +110,7 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Long, String> {
             	streamOut.write(buf, 0, numRead);
             	totalSize += numRead;
             	// mise à jour de la barre de progression
-            	publishProgress(totalSize);
+            	publishProgress(Long.valueOf(totalSize));
             }
 
             streamIn.close();
@@ -137,10 +140,6 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Long, String> {
         	mainThread.printNotif("Erreur !","PartageFree","Exception à l'upload");
             e.printStackTrace();
         }
-        catch (URISyntaxException e) {
-        	mainThread.printNotif("Erreur !","PartageFree","Exception URI");
-			e.printStackTrace();
-		}
         finally
         {
         	// si on a eu une Exception, on ferme la connexion
@@ -164,9 +163,10 @@ public class UploadToFree extends AsyncTask<PartageFreeActivity, Long, String> {
 	 * Fonction qui est appelée par le publishProgress pour la progressBar
 	 * @param result
 	 */
-    protected void onPostExecute(long currentSize) {
-    	long pourcentage = (size - currentSize)*100 / size;
-        mainThread.printNotif(pourcentage+"%", "PartageFree", "Avancement : "+pourcentage+"%");
+    protected void onProgressUpdate(Long ... currentSize) {
+    	super.onProgressUpdate(currentSize);
+    	long size = currentSize[0].longValue() / 1024;
+        mainThread.printNotif(size+"ko ","PartageFree", "Avancement : "+size+"ko");
     }
 
 }
